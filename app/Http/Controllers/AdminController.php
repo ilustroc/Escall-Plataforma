@@ -15,6 +15,7 @@ class AdminController extends Controller
         $filters = $request->validate(['buscar' => ['nullable', 'string', 'max:255']]);
         $users = User::query()
             ->when($filters['buscar'] ?? null, fn ($q, $term) => $q->where(fn ($nested) => $nested->where('nombre', 'like', "%{$term}%")->orWhere('usuario', 'like', "%{$term}%")))
+            ->select(['id','nombre','usuario','rol','activo'])
             ->orderBy('nombre')->paginate(15)->withQueryString();
 
         return Inertia::render('Admin/Index', ['users' => $users, 'filters' => $filters]);

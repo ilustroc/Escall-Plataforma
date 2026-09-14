@@ -14,6 +14,8 @@ const form = reactive({ cliente_id: props.cliente.id, tipo_documento: 'convenio'
 const { busy, message, success, errors, submit } = useApiForm();
 const convenio = computed(() => form.tipo_documento === 'convenio');
 const paymentText = computed(() => form.f_cuota ? `${form.f_cuota.split('-')[2]} de cada mes` : '');
+const totalDebt = computed(() => props.cuentas.reduce((total, account) => total + Number(account.deuda_total || 0), 0));
+const money = value => new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(Number(value || 0));
 watch(() => form.tipo_documento, () => { form.tipo_facilidad = convenio.value ? 'Convenio de Pago' : 'Cancelación'; if (convenio.value) form.usar_cuotas = false; });
 watch(() => [form.cancelacion, form.cuota_1, form.usar_cuotas], () => { form.cuota_2 = form.usar_cuotas ? Math.max(0, Number(form.cancelacion || 0) - Number(form.cuota_1 || 0)).toFixed(2) : ''; });
 async function generate() {
@@ -35,6 +37,7 @@ async function generate() {
         </template>
         <Alert :message="message" tone="error" />
         <Alert :message="success" />
+        <section class="grid gap-px overflow-hidden rounded-lg border border-slate-200 bg-slate-200 sm:grid-cols-3"><div class="bg-white px-4 py-3"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Documento</p><p class="mt-1 text-sm font-semibold tabular-nums">{{ cliente.dni }}</p></div><div class="bg-white px-4 py-3"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Cuentas activas</p><p class="mt-1 text-sm font-semibold">{{ cuentas.length }}</p></div><div class="bg-white px-4 py-3"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Deuda registrada</p><p class="mt-1 text-sm font-semibold text-escall-600">{{ money(totalDebt) }}</p></div></section>
         <form class="space-y-6" @submit.prevent="generate">
             <AccountTable v-model="selected" :cuentas="cuentas" />
             <p v-if="errors.cuentas_seleccionadas" class="error">{{ errors.cuentas_seleccionadas }}</p>

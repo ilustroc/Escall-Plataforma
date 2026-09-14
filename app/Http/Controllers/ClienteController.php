@@ -14,7 +14,7 @@ class ClienteController extends Controller
     {
         $dni = trim((string) $request->query('dni'));
         abort_if($dni === '', 404);
-        $accounts = Cliente::query()->where('dni', $dni)->orderBy('codigo')->get();
+        $accounts = Cliente::query()->where('dni', $dni)->orderBy('codigo')->get(['id','cartera','dni','titular','codigo','entidad','cosecha','producto','sub_producto','historico','departamento','rango','deuda_total','deuda_capital','campana']);
         abort_if($accounts->isEmpty(), 404);
 
         return Inertia::render('Clientes/Show', [
@@ -30,7 +30,7 @@ class ClienteController extends Controller
     public function search(ClienteSearchRequest $request, ClientService $clients)
     {
         $filters = $request->safe()->only(['dni', 'codigo', 'titular', 'cartera']);
-        $rows = $clients->query($filters)->orderBy('dni')->orderBy('codigo')->limit(200)->get();
+        $rows = $clients->query($filters)->orderBy('dni')->orderBy('codigo')->limit(200)->get(['id','dni','titular','codigo','cartera','entidad','producto','sub_producto','deuda_total','deuda_capital']);
 
         return response()->json(['ok' => true, 'data' => $rows]);
     }

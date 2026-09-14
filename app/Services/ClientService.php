@@ -10,7 +10,7 @@ class ClientService {
         $query=$this->query($filters);
         if (!array_filter(array_intersect_key($filters,array_flip(['dni','codigo','titular','cartera'])),fn($v)=>$v!==null && $v!=='')) $query->whereRaw('1=0');
         $groups=$query->select('dni')->distinct()->orderBy('dni')->paginate(15)->withQueryString();
-        $rows=$this->query($filters)->whereIn('dni',$groups->getCollection()->pluck('dni'))->orderBy('codigo')->get()->groupBy('dni');
+        $rows=$this->query($filters)->whereIn('dni',$groups->getCollection()->pluck('dni'))->orderBy('codigo')->get(['id','dni','titular','codigo','cartera'])->groupBy('dni');
         $groups->setCollection($groups->getCollection()->map(function($item) use ($rows) { $accounts=$rows[$item->dni]; return ['dni'=>$item->dni,'titular'=>$accounts->first()->titular,'codigos'=>$accounts->pluck('codigo'),'carteras'=>$accounts->pluck('cartera')->unique()->values(),'ids'=>$accounts->pluck('id')]; }));
         return $groups;
     }

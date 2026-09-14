@@ -16,14 +16,15 @@ class SeguimientoController extends Controller
 
     public function list(Request $request)
     {
-        $filters = $request->validate(['todos' => ['nullable', 'boolean'], 'fecha' => ['nullable', 'date_format:Y-m-d']]);
-        $query = Seguimiento::query()->with('cliente:id,codigo,dni,titular')->orderByDesc('fecha')->orderByDesc('hora')->orderByDesc('id');
+        $filters = $request->validate(['todos' => ['nullable', 'boolean'], 'fecha' => ['nullable', 'date_format:Y-m-d'], 'page' => ['nullable', 'integer', 'min:1']]);
+        $query = Seguimiento::query()->select(['id','usuario_id','codigo','fecha','hora','tipo','descripcion','estado'])
+            ->with('cliente:id,codigo,dni,titular')->orderByDesc('fecha')->orderByDesc('hora')->orderByDesc('id');
         if (!$request->user()->isAdmin() || !$request->boolean('todos')) {
             $query->where('usuario_id', $request->user()->id);
         }
         $query->when($filters['fecha'] ?? null, fn ($q, $date) => $q->whereDate('fecha', $date));
 
-        return response()->json(['data' => $query->limit(500)->get()]);
+        return response()->json($query->paginate(50)->withQueryString());
     }
 
     public function store(SeguimientoRequest $request)
@@ -45,13 +46,13 @@ class SeguimientoController extends Controller
 
     public function evolutivo(Request $request)
     {
-        $filters = $request->validate(['todos' => ['nullable', 'boolean'], 'fecha' => ['nullable', 'date_format:Y-m-d']]);
-        $query = SeguimientoEvolutivo::query()->orderByDesc('fecha')->orderByDesc('id');
+        $filters = $request->validate(['todos' => ['nullable', 'boolean'], 'fecha' => ['nullable', 'date_format:Y-m-d'], 'page' => ['nullable', 'integer', 'min:1']]);
+        $query = SeguimientoEvolutivo::query()->select(['id','usuario_id','dni','tipo_acuerdo','fecha','monto','estado','gestion'])->orderByDesc('fecha')->orderByDesc('id');
         if (!$request->user()->isAdmin() || !$request->boolean('todos')) {
             $query->where('usuario_id', $request->user()->id);
         }
         $query->when($filters['fecha'] ?? null, fn ($q, $date) => $q->whereDate('fecha', $date));
 
-        return response()->json(['data' => $query->limit(1000)->get()]);
+        return response()->json($query->paginate(50)->withQueryString());
     }
 }

@@ -9,10 +9,10 @@ import EmptyState from '../../Components/EmptyState.vue';
 import { useApiForm } from '../../Composables/useApiForm';
 import { PlusIcon, TrashIcon } from '@heroicons/vue/24/outline';
 const props = defineProps({ isAdmin: Boolean });
-const rows = ref([]), evolutivo = ref([]), loading = ref(false), view = ref('seguimientos'), show = ref(false), deleting = ref(null);
+const rows = ref([]), evolutivo = ref([]), pagination = ref(null), loading = ref(false), view = ref('seguimientos'), show = ref(false), deleting = ref(null);
 const filter = reactive({ todos: false, fecha: '' }); const form = reactive({ codigo: '', fecha: new Date().toISOString().slice(0, 10), hora: '09:00', tipo: 'seguimiento', descripcion: '', estado: '' });
 const { busy, message, success, errors, submit } = useApiForm();
-async function load() { loading.value = true; try { const endpoint = view.value === 'seguimientos' ? '/api/seguimientos' : '/api/evolutivo'; const { data } = await axios.get(endpoint, { params: { todos: filter.todos ? 1 : undefined, fecha: filter.fecha || undefined } }); if (view.value === 'seguimientos') rows.value = data.data; else evolutivo.value = data.data; } finally { loading.value = false; } }
+async function load(page = 1) { loading.value = true; try { const endpoint = view.value === 'seguimientos' ? '/api/seguimientos' : '/api/evolutivo'; const { data } = await axios.get(endpoint, { params: { todos: filter.todos ? 1 : undefined, fecha: filter.fecha || undefined, page } }); pagination.value = data; if (view.value === 'seguimientos') rows.value = data.data; else evolutivo.value = data.data; } finally { loading.value = false; } }
 function setView(next) { view.value = next; load(); }
 async function save() { const result = await submit('/api/seguimientos', form); if (result?.success) { show.value = false; success.value = 'Seguimiento registrado.'; Object.assign(form, { codigo: '', fecha: new Date().toISOString().slice(0, 10), hora: '09:00', tipo: 'seguimiento', descripcion: '', estado: '' }); load(); } }
 async function destroy() { const result = await submit('/api/seguimientos/eliminar', { id: deleting.value?.id }); if (result?.success) { deleting.value = null; load(); } }
@@ -93,6 +93,7 @@ onMounted(load);
             </div>
             <EmptyState v-else :title="view === 'seguimientos' ? 'Sin seguimientos registrados' : 'Sin datos evolutivos'"
                 description="Los registros que correspondan a tus filtros aparecerán aquí." />
+            <div v-if="pagination?.last_page > 1" class="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm"><span class="text-slate-500">{{ pagination.from }}–{{ pagination.to }} de {{ pagination.total }}</span><div class="flex gap-2"><button class="btn-secondary" :disabled="!pagination.prev_page_url || loading" @click="load(pagination.current_page - 1)">Anterior</button><button class="btn-secondary" :disabled="!pagination.next_page_url || loading" @click="load(pagination.current_page + 1)">Siguiente</button></div></div>
         </section>
         <AppModal :open="show" title="Registrar seguimiento" @close="show = false">
             <form class="space-y-4" @submit.prevent="save">

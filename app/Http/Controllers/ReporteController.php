@@ -25,12 +25,17 @@ class ReporteController extends Controller
         $scope = fn ($query) => $request->user()->isAdmin()
             ? $query
             : $query->where('usuario_id', $request->user()->id);
-        $documents = Documento::query()->with(['cliente:id,dni,titular', 'usuario:id,nombre,usuario'])
-            ->tap($scope)
-            ->tap($between)->orderByDesc('creado_en')->paginate(10, ['*'], 'acuerdos_page')->withQueryString();
-        $proposals = Propuesta::query()->with(['cliente:id,dni,titular', 'usuario:id,nombre,usuario'])
-            ->tap($scope)
-            ->tap($between)->orderByDesc('creado_en')->paginate(10, ['*'], 'propuestas_page')->withQueryString();
+        $empty = ['data' => [], 'links' => [], 'total' => 0, 'from' => null, 'to' => null];
+        $documents = $tab === 'acuerdos'
+            ? Documento::query()->select(['id','cliente_id','usuario_id','nombre_archivo','tipo_mime','creado_en'])
+                ->with(['cliente:id,dni,titular', 'usuario:id,nombre,usuario'])->tap($scope)->tap($between)
+                ->orderByDesc('creado_en')->paginate(10, ['*'], 'acuerdos_page')->withQueryString()
+            : $empty;
+        $proposals = $tab === 'propuestas'
+            ? Propuesta::query()->select(['id','cliente_id','usuario_id','propuesta_cliente','fecha_pago','nombre_archivo','tipo_archivo','creado_en'])
+                ->with(['cliente:id,dni,titular', 'usuario:id,nombre,usuario'])->tap($scope)->tap($between)
+                ->orderByDesc('creado_en')->paginate(10, ['*'], 'propuestas_page')->withQueryString()
+            : $empty;
 
         return Inertia::render('Reportes/Index', [
             'tab' => $tab,

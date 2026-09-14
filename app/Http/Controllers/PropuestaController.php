@@ -17,7 +17,7 @@ class PropuestaController extends Controller
             $dni = (string) Cliente::findOrFail($request->integer('cliente_id'))->dni;
         }
         abort_if($dni === '', 404);
-        $accounts = Cliente::query()->where('dni', $dni)->orderBy('codigo')->get();
+        $accounts = Cliente::query()->where('dni', $dni)->orderBy('codigo')->get(['id','cartera','dni','titular','codigo','entidad','cosecha','producto','sub_producto','historico','departamento','rango','deuda_total','deuda_capital','campana']);
         abort_if($accounts->isEmpty(), 404);
 
         return Inertia::render('Propuestas/Form', [

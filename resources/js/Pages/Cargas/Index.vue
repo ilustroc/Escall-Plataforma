@@ -33,9 +33,9 @@ async function upload() {
     subtitle="Importa información desde archivos privados y validados antes de incorporarla a la cartera.">
     <Alert :message="message" tone="error" />
     <Alert :message="success" />
-    <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
       <form class="card p-5 sm:p-6" @submit.prevent="upload">
-        <div class="mb-6 flex items-center gap-3"><span class="rounded-xl bg-escall-50 p-3">
+        <div class="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4"><span class="rounded-md bg-blue-50 p-2.5">
             <DocumentArrowUpIcon class="h-6 w-6 text-escall-500" />
           </span>
           <div>
@@ -66,7 +66,7 @@ async function upload() {
       <aside class="card p-5 sm:p-6">
         <h2 class="font-semibold">Columnas requeridas</h2>
         <p class="mt-1 text-sm text-slate-500">La primera fila debe contener estos encabezados.</p>
-        <ul class="mt-5 space-y-2">
+        <ul class="mt-4 grid grid-cols-2 gap-2 xl:block xl:space-y-2">
           <li v-for="header in headers[selected] || []" :key="header"
             class="rounded-lg bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">{{ header }}</li>
         </ul>

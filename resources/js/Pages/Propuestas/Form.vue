@@ -119,7 +119,7 @@ async function save() {
                     <a v-if="downloadUrl" :href="downloadUrl" class="btn-secondary">Descargar nuevamente</a><button
                         class="btn-primary" :disabled="busy || !selected.length">
                         <ArrowDownTrayIcon class="h-4 w-4" />{{
-                            busy ? "Registrando propuesta…" : "Registrar y descargarExcel"
+                            busy ? "Registrando propuesta…" : "Registrar y descargar Excel"
                         }}
                     </button>
                 </div>
