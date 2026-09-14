@@ -1,0 +1,2 @@
+# El DocumentRoot debe ser public/. Impide publicar el árbol privado por error.
+Require all denied

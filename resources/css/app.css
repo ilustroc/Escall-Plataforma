@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body { @apply bg-[#F5F7FB] font-sans text-slate-800 antialiased; }
+    button, a, input, select, textarea { @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-escall-500 focus-visible:ring-offset-2; }
+    input[type='checkbox'], input[type='radio'] { @apply h-4 w-4 accent-escall-500; }
+    ::selection { @apply bg-escall-100 text-escall-950; }
+}
+@layer components {
+    .card { @apply rounded-2xl border border-slate-200 bg-white shadow-card; }
+    .field { @apply block w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-500; }
+    .label { @apply mb-1.5 block text-sm font-medium text-slate-700; }
+    .btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50; }
+    .btn-primary { @apply btn bg-escall-500 text-white hover:bg-escall-600; }
+    .btn-secondary { @apply btn border border-slate-200 bg-white text-slate-700 hover:bg-slate-50; }
+    .btn-danger { @apply btn bg-red-600 text-white hover:bg-red-700; }
+    .badge { @apply inline-flex items-center rounded-md bg-escall-50 px-2 py-1 text-xs font-medium text-escall-600; }
+    .error { @apply mt-1 text-sm text-red-600; }
+    .table-shell { @apply overflow-x-auto; }
+    .table-shell table { @apply w-full text-left text-sm; }
+    .table-shell th { @apply whitespace-nowrap bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500; }
+    .table-shell td { @apply border-t border-slate-100 px-4 py-3.5 align-top; }
+    .table-shell tbody tr { @apply hover:bg-slate-50/70; }
+}

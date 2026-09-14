@@ -1,0 +1,18 @@
+Options -Indexes -MultiViews
+Require all granted
+RewriteEngine On
+RewriteBase /
+
+# Bloquear logs, secretos, dotfiles y PHP auxiliar antes de servir archivos reales.
+RewriteRule (^|/)\. - [F,L]
+RewriteRule (^|/)(error_log|composer\.(json|lock)|auth\.json)(/|$) - [F,L,NC]
+RewriteRule \.(log|sql|bak|backup|ini|env|pem|key|zip)$ - [F,L,NC]
+RewriteRule ^(?!index\.php$).*\.php(?:/|$) - [F,L,NC]
+
+# Sirve archivos reales
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Envía todo a index.php
+RewriteRule ^ index.php [L]
