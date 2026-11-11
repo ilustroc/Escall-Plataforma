@@ -6,6 +6,7 @@
 .env
 .env.*
 !.env.example
+!.env.docker.example
 /config/*.local.php
 auth.json
 *.pem

@@ -12,39 +12,53 @@ La aplicación usa Laravel como backend y Vue mediante Inertia para una experien
 - MySQL para producción; SQLite en memoria para pruebas
 - PHPUnit 11
 
-## Requisitos
+## Desarrollo aislado con Docker (obligatorio)
 
-- PHP 8.2 con extensiones `mbstring`, `pdo_mysql`, `fileinfo`, `gd` y `zip`
-- Composer 2
-- Node.js 20 o superior y npm
-- MySQL 8 o compatible para entornos no de prueba
+No se necesita ni se debe usar PHP, Composer, Node.js, npm o MySQL instalados en Windows. El archivo `compose.yaml` define un proyecto aislado llamado `escall-plataforma-dev`, con PHP 8.3-FPM, Nginx, MySQL 8.4 y Node 20.19. MySQL sólo está disponible dentro de la red Compose como `db`; el puerto 3306 no se publica en Windows.
 
-## Instalación local
+Antes del primer inicio, abre Docker Desktop y, desde PowerShell en la raíz del repositorio, crea la configuración local ficticia (no modifica `.env`):
 
-```bash
-composer install
-npm ci
-copy .env.example .env
-php artisan key:generate
+```powershell
+Copy-Item .env.docker.example .env.docker
+docker compose --env-file .env.docker up -d --build
+docker compose --env-file .env.docker ps
 ```
 
-Configura en `.env` la conexión a una base de datos local. Nunca uses credenciales productivas en desarrollo.
+La primera ejecución instala Composer y npm dentro de sus respectivos contenedores. También genera una clave de aplicación exclusiva en un volumen Docker privado; ni la clave ni las contraseñas de prueba se escriben en Git ni en el `.env` existente.
 
-La migración `2026_09_13_000000_create_legacy_compatible_tables.php` sirve únicamente para una instalación limpia o pruebas. No se debe ejecutar sobre una base legacy existente sin una revisión previa del esquema.
+Abre [http://localhost:8088/login](http://localhost:8088/login). Vite de desarrollo queda disponible en `http://localhost:5178`; no es necesario acceder a él directamente.
 
-```bash
-# Solo para una base local nueva
-php artisan migrate
+Los datos de MySQL viven en el volumen exclusivo del proyecto. La migración `2026_09_13_000000_create_legacy_compatible_tables.php` fue diseñada para instalaciones vacías, pero no se ejecuta automáticamente ni debe ejecutarse sobre un esquema legacy sin una revisión y autorización explícitas. Por tanto, el entorno recién levantado sirve para la interfaz y las pruebas; no tiene usuarios MySQL de ejemplo hasta que se autorice un esquema de prueba. El seeder `DockerDevelopmentSeeder` queda preparado para una base Docker vacía y crea sólo el usuario ficticio `demo.escall` (contraseña `DockerOnlyLogin2026!`); tampoco se ejecuta automáticamente.
 
-npm run dev
-php artisan serve
+### Operación desde PowerShell
+
+```powershell
+# Iniciar o reconstruir servicios aislados
+docker compose --env-file .env.docker up -d --build
+
+# Detener sin borrar datos o volúmenes
+docker compose --env-file .env.docker stop
+
+# Ver estado y logs
+docker compose --env-file .env.docker ps
+docker compose --env-file .env.docker logs -f app web node db
+
+# Laravel y Composer, siempre dentro del contenedor PHP
+docker compose --env-file .env.docker exec app php artisan about
+docker compose --env-file .env.docker exec app composer install
+
+# Vite y build de producción, siempre dentro del contenedor Node
+docker compose --env-file .env.docker exec node npm run build
+docker compose --env-file .env.docker logs -f node
+
+# Pruebas: SQLite efímero dentro del contenedor (no usa MySQL ni Windows)
+docker compose --env-file .env.docker exec app escall-test
+
+# Shell MySQL aislado; no hay puerto publicado en Windows
+docker compose --env-file .env.docker exec db mysql -u escall_docker -p escall_plataforma_docker
 ```
 
-Para generar assets de producción:
-
-```bash
-npm run build
-```
+No use `docker compose down -v`, `docker volume prune` ni comandos de limpieza global para este proyecto. Si necesitas detener y volver a iniciar todos sus contenedores sin borrar datos, usa `docker compose --env-file .env.docker down` seguido de `up -d`; los volúmenes permanecen intactos.
 
 ## Estructura principal
 
@@ -74,9 +88,9 @@ tests/                 Pruebas Feature y Unit
 ## Pruebas
 
 ```bash
-php artisan test
-composer audit --locked
-npm audit --omit=dev
+docker compose --env-file .env.docker exec app escall-test
+docker compose --env-file .env.docker exec app composer audit --locked
+docker compose --env-file .env.docker exec node npm audit --omit=dev
 ```
 
 ## Seguridad y branding

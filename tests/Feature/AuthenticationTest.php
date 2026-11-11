@@ -15,6 +15,18 @@ class AuthenticationTest extends TestCase
     private const PASSWORD = 'Testing-only-password-42!';
     private const FAILURE = 'No se pudo iniciar sesión con las credenciales proporcionadas.';
 
+    public function test_login_is_a_server_rendered_blade_form_without_the_inertia_bundle(): void
+    {
+        $this->get('/login')
+            ->assertOk()
+            ->assertViewIs('auth.login')
+            ->assertSee('Bienvenido de nuevo')
+            ->assertSee('name="usuario"', false)
+            ->assertSee('name="contrasena"', false)
+            ->assertSee('name="_token"', false)
+            ->assertDontSee('resources/js/app.js', false);
+    }
+
     public function test_successful_login_normalizes_identifier_and_regenerates_session(): void
     {
         $user = User::factory()->create(['usuario' => 'asesor@example.test']);

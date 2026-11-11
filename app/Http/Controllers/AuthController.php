@@ -5,11 +5,13 @@ use App\Http\Requests\LoginRequest;
 use App\Services\LoginService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
 
 class AuthController extends Controller
 {
-    public function showLogin() { return Inertia::render('Auth/Login', ['recoveryUrl'=>config('platform.recovery_url')]); }
+    public function showLogin()
+    {
+        return view('auth.login');
+    }
     public function login(LoginRequest $request, LoginService $service)
     {
         $service->authenticate($request);
