@@ -14,5 +14,6 @@
         <env name="SESSION_SECURE_COOKIE" value="false" force="true"/>
         <env name="BCRYPT_ROUNDS" value="4" force="true"/>
         <env name="LEGACY_PASSWORDS_ALLOWED" value="false" force="true"/>
+        <env name="QUEUE_CONNECTION" value="sync" force="true"/>
     </php>
 </phpunit>

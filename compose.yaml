@@ -22,6 +22,7 @@ services:
       SESSION_SECURE_COOKIE: "false"
       TRUSTED_PROXIES: ""
       LEGACY_PASSWORDS_ALLOWED: "false"
+      QUEUE_CONNECTION: database
     volumes:
       - ./:/var/www/html
       - composer_vendor:/var/www/html/vendor
@@ -43,6 +44,39 @@ services:
       - composer_vendor:/var/www/html/vendor:ro
     depends_on:
       - app
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    working_dir: /var/www/html
+    command: >-
+      php artisan queue:work database --queue=imports --sleep=1 --tries=2
+      --timeout=900 --memory=384 --max-time=3600 --no-interaction
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: escall_plataforma_docker
+      DB_USERNAME: escall_docker
+      DB_PASSWORD: ${ESCALL_DB_PASSWORD:-escall_local_only}
+      QUEUE_CONNECTION: database
+      QUEUE_NAME: imports
+      CACHE_STORE: file
+      SESSION_DRIVER: file
+      LEGACY_PASSWORDS_ALLOWED: "false"
+    volumes:
+      - ./:/var/www/html
+      - composer_vendor:/var/www/html/vendor
+      - composer_cache:/tmp/composer
+      - laravel_runtime:/var/www/.docker-runtime
+      - laravel_framework:/var/www/html/storage/framework
+      - laravel_bootstrap_cache:/var/www/html/bootstrap/cache
+    depends_on:
+      db:
+        condition: service_healthy
 
   db:
     image: mysql:8.4.4

@@ -4,10 +4,12 @@
     $items = [
         ['label' => 'Inicio y clientes', 'href' => route('dashboard'), 'active' => $path === '/inicio' || $path === '/clientes', 'icon' => 'home'],
         ['label' => 'Seguimientos', 'href' => route('seguimientos.index'), 'active' => $path === '/seguimientos', 'icon' => 'calendar'],
-        ['label' => 'Cargas', 'href' => route('cargas.index'), 'active' => $path === '/cargas', 'icon' => 'upload'],
         ['label' => 'Reportes', 'href' => route('reportes.index'), 'active' => $path === '/reportes', 'icon' => 'report'],
     ];
-    if ($user->isAdmin()) $items[] = ['label' => 'Usuarios', 'href' => route('admin.index'), 'active' => $path === '/admin', 'icon' => 'users'];
+    if ($user->isAdmin()) {
+        array_splice($items, 2, 0, [['label' => 'Cargas', 'href' => route('cargas.index'), 'active' => str_starts_with($path, '/cargas'), 'icon' => 'upload']]);
+        $items[] = ['label' => 'Usuarios', 'href' => route('admin.index'), 'active' => $path === '/admin', 'icon' => 'users'];
+    }
 @endphp
 
 <div class="sidebar-overlay" data-mobile-overlay hidden></div>

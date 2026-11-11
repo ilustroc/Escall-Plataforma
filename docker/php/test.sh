@@ -12,5 +12,6 @@ export SESSION_DRIVER=array
 export SESSION_SECURE_COOKIE=false
 export SECURITY_ENFORCE_CSRF=false
 export LEGACY_PASSWORDS_ALLOWED=false
+export QUEUE_CONNECTION=sync
 
 exec php artisan test "$@"

@@ -3,13 +3,16 @@
 namespace Tests\Feature;
 
 use App\Models\Documento;
+use App\Models\Importacion;
 use App\Models\Seguimiento;
 use App\Models\User;
 use App\Services\CarteraMensualQuery;
 use App\Services\DashboardMetricsService;
+use App\Services\MassImportProcessor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 use Tests\Support\LegacyFixtures;
 use Tests\TestCase;
@@ -32,14 +35,15 @@ class CarteraMensualTest extends TestCase
         $this->actingAs(User::factory()->administrator()->create());
         $headers = 'cartera,documento,nombre,codigo,entidad,cosecha,producto,sub_producto,departamento,deuda_total,deuda_capital,campana,FEC_PRO';
 
-        $this->postJson('/cargas/data', ['file' => $this->csv('june.csv', [$headers, 'C,123127,AMMED ALI,001234,E,2026,P,S,Lima,100,90,C,20260601'])])
-            ->assertOk()->assertJsonPath('summary.inserted', 1)->assertJsonPath('summary.period', '20260601');
+        $firstImport = $this->queueAssignment($this->csv('june.csv', [$headers, 'C,123127,AMMED ALI,001234,E,2026,P,S,Lima,100,90,C,20260601']));
+        $this->assertSame('completado', $firstImport->estado);
         $first = DB::table('Cartera_Mensual')->where('codigo', '001234')->where('FEC_PRO', '20260601')->value('id');
 
-        $this->postJson('/cargas/data', ['file' => $this->csv('november.csv', [$headers, 'C,123127,AMMED ALI,001234,E,2026,P,S,Lima,220,190,C,20261101'])])
-            ->assertOk()->assertJsonPath('summary.inserted', 1);
-        $this->postJson('/cargas/data', ['file' => $this->csv('november-update.csv', [$headers, 'C,123127,AMMED ALI ACTUALIZADO,001234,E,2026,P,S,Lima,250,200,C,20261101'])])
-            ->assertOk()->assertJsonPath('summary.updated', 1);
+        $this->queueAssignment($this->csv('november.csv', [$headers, 'C,123127,AMMED ALI,001234,E,2026,P,S,Lima,220,190,C,20261101']));
+        $updated = $this->queueAssignment($this->csv('november-update.csv', [$headers, 'C,123127,AMMED ALI ACTUALIZADO,001234,E,2026,P,S,Lima,250,200,C,20261101']));
+        $this->assertSame(1, $updated->actualizadas);
+        $unchanged = $this->queueAssignment($this->csv('november-repeat.csv', [$headers, 'C,123127,AMMED ALI ACTUALIZADO,001234,E,2026,P,S,Lima,250,200,C,20261101']));
+        $this->assertSame(1, $unchanged->omitidas);
 
         $this->assertDatabaseCount('Cartera_Mensual', 2);
         $this->assertDatabaseHas('Cartera_Mensual', ['id' => $first, 'FEC_PRO' => '20260601', 'deuda_total' => 100]);
@@ -103,15 +107,27 @@ class CarteraMensualTest extends TestCase
         $this->actingAs(User::factory()->administrator()->create());
         $headers = 'cartera,documento,nombre,codigo,entidad,cosecha,producto,sub_producto,departamento,deuda_total,deuda_capital,campana,FEC_PRO';
 
-        $this->postJson('/cargas/data', ['file' => $this->csv('bad-date.csv', [$headers, 'C,123,Nombre,001234,E,2026,P,S,Lima,1,1,C,20261301'])])
-            ->assertUnprocessable()->assertJsonValidationErrors('file');
-        $this->postJson('/cargas/data', ['file' => $this->csv('lost-code.csv', [$headers, 'C,123,Nombre,1.10814E+17,E,2026,P,S,Lima,1,1,C,20261101'])])
-            ->assertUnprocessable()->assertJsonValidationErrors('file');
+        $invalidDate = $this->queueAssignment($this->csv('bad-date.csv', [$headers, 'C,123,Nombre,001234,E,2026,P,S,Lima,1,1,C,20261301']));
+        $invalidCode = $this->queueAssignment($this->csv('lost-code.csv', [$headers, 'C,123,Nombre,1.10814E+17,E,2026,P,S,Lima,1,1,C,20261101']));
+        $this->assertSame('fallido', $invalidDate->estado);
+        $this->assertSame('fallido', $invalidCode->estado);
+        $this->assertDatabaseHas('importacion_errores', ['importacion_id' => $invalidDate->id, 'codigo' => 'INVALID_PROCESS_DATE']);
+        $this->assertDatabaseHas('importacion_errores', ['importacion_id' => $invalidCode->id, 'codigo' => 'SCIENTIFIC_NOTATION']);
         $this->assertDatabaseCount('Cartera_Mensual', 0);
     }
 
     private function csv(string $name, array $lines): UploadedFile
     {
         return UploadedFile::fake()->createWithContent($name, implode("\n", $lines));
+    }
+
+    private function queueAssignment(UploadedFile $file): Importacion
+    {
+        Queue::fake();
+        $this->postJson('/cargas/data', ['file' => $file])->assertSuccessful();
+        $import = Importacion::query()->latest('id')->firstOrFail();
+        app(MassImportProcessor::class)->process($import);
+
+        return $import->fresh();
     }
 }

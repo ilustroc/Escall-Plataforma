@@ -55,7 +55,11 @@ class AccessControlTest extends TestCase
     {
         $routes = [];
         foreach (['asesor', 'supervisor'] as $role) {
-            foreach ([['GET', '/admin'], ['POST', '/admin/crear'], ['POST', '/admin/actualizar'], ['POST', '/admin/toggle'], ['POST', '/admin/eliminar'], ['POST', '/cargas/data'], ['POST', '/cargas/pagos']] as [$method, $url]) {
+            foreach ([
+                ['GET', '/admin'], ['POST', '/admin/crear'], ['POST', '/admin/actualizar'], ['POST', '/admin/toggle'], ['POST', '/admin/eliminar'],
+                ['GET', '/cargas'], ['GET', '/cargas/asignacion'], ['GET', '/cargas/pagos'], ['GET', '/cargas/ccd'], ['GET', '/cargas/data'],
+                ['POST', '/cargas/asignacion'], ['POST', '/cargas/data'], ['POST', '/cargas/pagos'],
+            ] as [$method, $url]) {
                 $routes[$role.' '.$url] = [$role, $method, $url];
             }
         }

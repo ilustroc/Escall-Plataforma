@@ -6,6 +6,7 @@
     <link rel="icon" href="{{ asset('assets/img/logo-tipo.png') }}">
     <title>@yield('title', 'Plataforma ESCALL')</title>
     @vite('resources/js/dashboard.js')
+    @stack('scripts')
 </head>
 <body class="bg-[#F1F5F9] font-sans text-[#0F172A] antialiased">
     <a href="#main-content" class="sr-only z-[90] bg-white p-3 focus:not-sr-only focus:fixed">Saltar al contenido</a>

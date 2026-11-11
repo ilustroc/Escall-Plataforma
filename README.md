@@ -39,9 +39,9 @@ docker compose --env-file .env.docker up -d --build
 # Detener sin borrar datos o volúmenes
 docker compose --env-file .env.docker stop
 
-# Ver estado y logs
+# Ver estado y logs (incluye el worker de cargas masivas)
 docker compose --env-file .env.docker ps
-docker compose --env-file .env.docker logs -f app web node db
+docker compose --env-file .env.docker logs -f app web node db worker
 
 # Laravel y Composer, siempre dentro del contenedor PHP
 docker compose --env-file .env.docker exec app php artisan about
@@ -80,6 +80,8 @@ tests/                 Pruebas Feature y Unit
 - **Dashboard:** KPIs operativos de cartera, pagos y seguimiento.
 - **Clientes:** búsqueda, detalle de cuentas y generación de documentos Word.
 - **Cargas:** importación validada de DATA, pagos y seguimientos.
+- **Integración masiva:** asignaciones y pagos Blade con cola de base de datos,
+  lectura CSV/XLSX incremental, progreso, historial y CSV privado de errores.
 - **Propuestas:** registro y descarga privada de Excel.
 - **Reportes:** consulta, descarga y eliminación autorizada de documentos.
 - **Seguimientos:** registro, historial y evolución de acuerdos.
@@ -92,6 +94,9 @@ docker compose --env-file .env.docker exec app escall-test
 docker compose --env-file .env.docker exec app composer audit --locked
 docker compose --env-file .env.docker exec node npm audit --omit=dev
 ```
+
+Consulta [la operación de integraciones masivas](docs/INTEGRACION-MASIVA.md)
+para los formatos, estados, límites y comandos del worker.
 
 ## Seguridad y branding
 

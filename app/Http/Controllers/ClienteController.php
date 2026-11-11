@@ -38,17 +38,21 @@ class ClienteController extends Controller
     public function suggestions(ClienteAutocompleteRequest $request)
     {
         $term = mb_strtolower($request->validated('q'), 'UTF-8');
-        $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
-        $prefix = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
+        // MySQL treats a backslash in an ESCAPE literal as an unterminated
+        // escape under its default SQL mode. A fixed, non-user delimiter also
+        // keeps wildcard escaping portable to the Docker MySQL service.
+        $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $term);
+        $like = '%'.$escaped.'%';
+        $prefix = $escaped.'%';
 
         $rows = CarteraMensualQuery::vigentes()
             ->where(function ($query) use ($like): void {
-                $query->whereRaw('LOWER(documento) LIKE ? ESCAPE \'\\\'', [$like])
-                    ->orWhereRaw('LOWER(codigo) LIKE ? ESCAPE \'\\\'', [$like])
-                    ->orWhereRaw('LOWER(nombre) LIKE ? ESCAPE \'\\\'', [$like]);
+                $query->whereRaw("LOWER(documento) LIKE ? ESCAPE '!'", [$like])
+                    ->orWhereRaw("LOWER(codigo) LIKE ? ESCAPE '!'", [$like])
+                    ->orWhereRaw("LOWER(nombre) LIKE ? ESCAPE '!'", [$like]);
             })
             ->orderByRaw(
-                'CASE WHEN LOWER(documento) = ? OR LOWER(codigo) = ? THEN 0 WHEN LOWER(documento) LIKE ? ESCAPE \'\\\' OR LOWER(codigo) LIKE ? ESCAPE \'\\\' OR LOWER(nombre) LIKE ? ESCAPE \'\\\' THEN 1 ELSE 2 END',
+                "CASE WHEN LOWER(documento) = ? OR LOWER(codigo) = ? THEN 0 WHEN LOWER(documento) LIKE ? ESCAPE '!' OR LOWER(codigo) LIKE ? ESCAPE '!' OR LOWER(nombre) LIKE ? ESCAPE '!' THEN 1 ELSE 2 END",
                 [$term, $term, $prefix, $prefix, $prefix],
             )
             ->orderBy('documento')
