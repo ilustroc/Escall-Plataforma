@@ -28,5 +28,25 @@ class DockerDevelopmentSeeder extends Seeder
                 'activo' => 1,
             ],
         );
+
+        $adminUser = trim((string) env('ESCALL_DEMO_ADMIN_USER', ''));
+        $adminPassword = (string) env('ESCALL_DEMO_ADMIN_PASSWORD', '');
+        if ($adminUser === '' && $adminPassword === '') {
+            return;
+        }
+        if ($adminUser === '' || $adminPassword === '') {
+            throw new LogicException('Defina ESCALL_DEMO_ADMIN_USER y ESCALL_DEMO_ADMIN_PASSWORD para crear el administrador demo local.');
+        }
+
+        $admin = User::query()->firstOrNew(['usuario' => $adminUser]);
+        $admin->fill([
+            'nombre' => (string) env('ESCALL_DEMO_ADMIN_NAME', 'Administrador de demostración'),
+            'rol' => 'administrador',
+            'activo' => 1,
+        ]);
+        if (! $admin->exists || ! Hash::check($adminPassword, (string) $admin->contrasena)) {
+            $admin->contrasena = Hash::make($adminPassword);
+        }
+        $admin->save();
     }
 }

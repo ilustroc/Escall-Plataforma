@@ -60,6 +60,19 @@ docker compose --env-file .env.docker exec db mysql -u escall_docker -p escall_p
 
 No use `docker compose down -v`, `docker volume prune` ni comandos de limpieza global para este proyecto. Si necesitas detener y volver a iniciar todos sus contenedores sin borrar datos, usa `docker compose --env-file .env.docker down` seguido de `up -d`; los volúmenes permanecen intactos.
 
+### Administrador demo local
+
+El seeder conserva el asesor `demo.escall` y puede crear un administrador sólo
+cuando las credenciales ficticias se proporcionan desde la sesión local de
+PowerShell, nunca desde Git:
+
+```powershell
+$env:ESCALL_DEMO_ADMIN_USER = 'demo.admin'
+$env:ESCALL_DEMO_ADMIN_PASSWORD = Read-Host 'Contraseña local de demo'
+docker compose --env-file .env.docker exec -e ESCALL_DEMO_ADMIN_USER -e ESCALL_DEMO_ADMIN_PASSWORD app php artisan db:seed --class='Database\Seeders\DockerDevelopmentSeeder'
+Remove-Item Env:ESCALL_DEMO_ADMIN_USER, Env:ESCALL_DEMO_ADMIN_PASSWORD
+```
+
 ## Estructura principal
 
 ```text

@@ -84,9 +84,9 @@ onBeforeUnmount(() => clearTimeout(timer));
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="cliente in clientes.data" :key="cliente.dni">
-                                    <td class="font-medium tabular-nums">{{ cliente.dni }}</td>
-                                    <td>{{ cliente.titular }}</td>
+                                <tr v-for="cliente in clientes.data" :key="cliente.documento">
+                                    <td class="font-medium tabular-nums">{{ cliente.documento }}</td>
+                                    <td>{{ cliente.nombre }}</td>
                                     <td>
                                         <div class="flex max-w-xs flex-wrap gap-1"><span
                                                 v-for="codigo in cliente.codigos" :key="codigo" class="badge">{{ codigo
@@ -94,7 +94,7 @@ onBeforeUnmount(() => clearTimeout(timer));
                                     </td>
                                     <td>{{ cliente.carteras?.join(', ') }}</td>
                                     <td>
-                                        <Link :href="`/clientes?dni=${encodeURIComponent(cliente.dni)}`"
+                                        <Link :href="`/clientes?dni=${encodeURIComponent(cliente.documento)}`"
                                             class="inline-flex items-center gap-1 text-sm font-semibold text-escall-600 hover:underline">
                                             Gestionar
                                             <ArrowRightIcon class="h-4 w-4" />
@@ -119,7 +119,7 @@ onBeforeUnmount(() => clearTimeout(timer));
                     <div v-for="activity in recentActivity" :key="activity.id" class="p-4">
                         <div class="flex justify-between gap-3"><span class="badge capitalize">{{ activity.tipo
                                 }}</span><span class="text-xs text-slate-500">{{ activity.fecha }}</span></div>
-                        <p class="mt-2 text-sm font-medium text-slate-800">{{ activity.cliente?.titular ||
+                        <p class="mt-2 text-sm font-medium text-slate-800">{{ activity.cliente?.nombre ||
                             activity.codigo }}</p>
                         <p class="mt-1 line-clamp-2 text-xs text-slate-500">{{ activity.descripcion || 'Sin descripción'
                             }}</p>

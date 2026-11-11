@@ -62,11 +62,11 @@ async function save() {
 }
 </script>
 <template>
-    <AppLayout title="Nueva propuesta" :subtitle="`${cliente.titular} · Documento ${cliente.dni}`" :breadcrumbs="[
+    <AppLayout title="Nueva propuesta" :subtitle="`${cliente.nombre} · Documento ${cliente.documento}`" :breadcrumbs="[
         { label: 'Clientes', href: '/inicio' },
         {
             label: 'Detalle',
-            href: `/clientes?dni=${encodeURIComponent(cliente.dni)}`,
+            href: `/clientes?dni=${encodeURIComponent(cliente.documento)}`,
         },
     ]">
         <Alert :message="message" tone="error" />

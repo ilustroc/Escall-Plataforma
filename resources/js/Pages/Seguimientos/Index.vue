@@ -56,7 +56,7 @@ onMounted(load);
                             <td>{{ row.fecha }}</td>
                             <td>{{ row.hora || '—' }}</td>
                             <td><span class="badge">{{ row.codigo }}</span><span class="ml-2 text-xs text-slate-500">{{
-                                    row.cliente?.titular || '' }}</span></td>
+                                    row.cliente?.nombre || '' }}</span></td>
                             <td class="capitalize">{{ row.tipo }}</td>
                             <td>{{ row.descripcion || '—' }}</td>
                             <td>{{ row.estado || '—' }}</td>

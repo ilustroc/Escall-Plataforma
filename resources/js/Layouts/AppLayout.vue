@@ -42,39 +42,44 @@ const initials = computed(() =>
         .toUpperCase()
 );
 
-const navigation = computed(() => [
-    {
-        label: 'Inicio y clientes',
-        href: '/inicio',
-        icon: HomeIcon,
-        match: ['/inicio', '/clientes', '/propuestas'],
-    },
-    {
-        label: 'Seguimientos',
-        href: '/seguimientos',
-        icon: CalendarDaysIcon,
-    },
-    {
-        label: 'Cargas',
-        href: '/cargas',
-        icon: FolderArrowDownIcon,
-    },
-    {
-        label: 'Reportes',
-        href: '/reportes',
-        icon: ChartBarSquareIcon,
-    },
+const navigation = computed(() => {
+    const items = [
+        {
+            label: 'Inicio y clientes',
+            href: '/inicio',
+            icon: HomeIcon,
+            match: ['/inicio', '/clientes', '/propuestas'],
+        },
+        {
+            label: 'Seguimientos',
+            href: '/seguimientos',
+            icon: CalendarDaysIcon,
+        },
+    ];
 
-    ...(user.value.rol === 'administrador'
-        ? [
-            {
-                label: 'Usuarios',
-                href: '/admin',
-                icon: UsersIcon,
-            },
-        ]
-        : []),
-]);
+    if (user.value.rol === 'administrador') {
+        items.push({ label: 'Cargas', href: '/cargas', icon: FolderArrowDownIcon });
+    }
+
+    items.push({ label: 'Reportes', href: '/reportes', icon: ChartBarSquareIcon });
+
+    if (user.value.rol === 'administrador') {
+        items.push({ label: 'Usuarios', href: '/admin', icon: UsersIcon });
+    }
+
+    return items;
+});
+
+// Inertia visits must only target responses with the X-Inertia protocol.
+// Blade destinations intentionally perform a normal document navigation.
+const isBladeDestination = href => href === '/inicio' || href.startsWith('/cargas');
+
+function visitBlade(event, href) {
+    // Leave Inertia deliberately for server-rendered Blade routes. The native
+    // href remains available for progressive enhancement and copied links.
+    event.preventDefault();
+    window.location.assign(href);
+}
 
 const active = item =>
     (item.match || [item.href]).some(
@@ -132,9 +137,9 @@ function logout() {
             :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
             <!-- LOGO -->
             <div class="relative flex h-20 items-center justify-center border-b border-white/10 px-5">
-                <Link href="/inicio" class="flex items-center justify-center" aria-label="ESCALL Perú - Inicio">
+                <a href="/inicio" class="flex items-center justify-center" aria-label="ESCALL Perú - Inicio" @click="visitBlade($event, '/inicio')">
                     <img :src="'/assets/img/logo.png'" alt="ESCALL Perú" class="h-10 w-auto object-contain" />
-                </Link>
+                </a>
 
                 <button class="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-2 lg:hidden"
                     aria-label="Cerrar menú" @click="sidebarOpen = false">
@@ -148,7 +153,17 @@ function logout() {
                     Operación
                 </p>
 
-                <Link v-for="item in navigation" :key="item.href" :href="item.href"
+                <a v-for="item in navigation.filter(item => isBladeDestination(item.href))" :key="item.href" :href="item.href" @click="visitBlade($event, item.href)"
+                    class="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition" :class="active(item)
+                        ? 'bg-escall-500 text-white shadow-sm'
+                        : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                        " :aria-current="active(item) ? 'page' : undefined">
+                    <component :is="item.icon" class="h-5 w-5" />
+
+                    {{ item.label }}
+                </a>
+
+                <Link v-for="item in navigation.filter(item => !isBladeDestination(item.href))" :key="item.href" :href="item.href"
                     class="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition" :class="active(item)
                         ? 'bg-escall-500 text-white shadow-sm'
                         : 'text-slate-300 hover:bg-white/10 hover:text-white'
@@ -227,14 +242,18 @@ function logout() {
                     <!-- BREADCRUMBS -->
                     <nav class="mb-2 flex flex-wrap items-center gap-2 text-xs text-slate-500"
                         aria-label="Ruta de navegación">
-                        <Link href="/inicio">
+                        <a href="/inicio" @click="visitBlade($event, '/inicio')">
                             Inicio
-                        </Link>
+                        </a>
 
                         <template v-for="crumb in breadcrumbs" :key="crumb.label">
                             <ChevronRightIcon class="h-3 w-3" />
 
-                            <Link v-if="crumb.href" :href="crumb.href">
+                            <a v-if="crumb.href && isBladeDestination(crumb.href)" :href="crumb.href" @click="visitBlade($event, crumb.href)">
+                                {{ crumb.label }}
+                            </a>
+
+                            <Link v-else-if="crumb.href" :href="crumb.href">
                                 {{ crumb.label }}
                             </Link>
 

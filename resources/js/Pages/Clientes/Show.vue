@@ -27,8 +27,8 @@ async function generate() {
 }
 </script>
 <template>
-    <AppLayout :title="cliente.titular || 'Detalle del cliente'"
-        :subtitle="`Documento ${cliente.dni} · ${cuentas.length} cuenta(s)`"
+    <AppLayout :title="cliente.nombre || 'Detalle del cliente'"
+        :subtitle="`Documento ${cliente.documento} · ${cuentas.length} cuenta(s)`"
         :breadcrumbs="[{ label: 'Clientes', href: '/inicio' }]">
         <template #actions>
             <Link :href="`/propuestas?cliente_id=${cliente.id}`" class="btn-primary">Registrar propuesta
@@ -37,7 +37,7 @@ async function generate() {
         </template>
         <Alert :message="message" tone="error" />
         <Alert :message="success" />
-        <section class="grid gap-px overflow-hidden rounded-lg border border-slate-200 bg-slate-200 sm:grid-cols-3"><div class="bg-white px-4 py-3"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Documento</p><p class="mt-1 text-sm font-semibold tabular-nums">{{ cliente.dni }}</p></div><div class="bg-white px-4 py-3"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Cuentas activas</p><p class="mt-1 text-sm font-semibold">{{ cuentas.length }}</p></div><div class="bg-white px-4 py-3"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Deuda registrada</p><p class="mt-1 text-sm font-semibold text-escall-600">{{ money(totalDebt) }}</p></div></section>
+        <section class="grid gap-px overflow-hidden rounded-lg border border-slate-200 bg-slate-200 sm:grid-cols-3"><div class="bg-white px-4 py-3"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Documento</p><p class="mt-1 text-sm font-semibold tabular-nums">{{ cliente.documento }}</p></div><div class="bg-white px-4 py-3"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Cuentas activas</p><p class="mt-1 text-sm font-semibold">{{ cuentas.length }}</p></div><div class="bg-white px-4 py-3"><p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Deuda registrada</p><p class="mt-1 text-sm font-semibold text-escall-600">{{ money(totalDebt) }}</p></div></section>
         <form class="space-y-6" @submit.prevent="generate">
             <AccountTable v-model="selected" :cuentas="cuentas" />
             <p v-if="errors.cuentas_seleccionadas" class="error">{{ errors.cuentas_seleccionadas }}</p>

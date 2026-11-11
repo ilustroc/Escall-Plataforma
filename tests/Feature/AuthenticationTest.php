@@ -115,6 +115,16 @@ class AuthenticationTest extends TestCase
         $this->get('/inicio')->assertRedirect('/login');
     }
 
+    public function test_inertia_logout_requests_trigger_a_full_document_login_navigation(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->post('/logout', [], ['X-Inertia' => 'true'])
+            ->assertStatus(409)
+            ->assertHeader('X-Inertia-Location', route('login'));
+
+        $this->assertGuest();
+    }
+
     public function test_get_cannot_log_a_user_out_and_remember_input_does_not_create_a_recaller_cookie(): void
     {
         $user = User::factory()->create();

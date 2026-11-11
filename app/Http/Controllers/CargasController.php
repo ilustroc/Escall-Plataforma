@@ -9,15 +9,16 @@ use App\Models\Importacion;
 use App\Services\{DocumentService, ImportService};
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class CargasController extends Controller
 {
     private const TYPES = ['asignacion' => 'Asignación', 'pagos' => 'Pagos'];
 
-    public function index(Request $request) { return view('cargas.index', ['imports' => $this->history($request)]); }
-    public function asignacion(Request $request) { return view('cargas.asignacion', ['imports' => $this->history($request, 'asignacion')]); }
-    public function pagos(Request $request) { return view('cargas.pagos', ['imports' => $this->history($request, 'pagos')]); }
-    public function pending(string $kind) { abort_unless(in_array($kind, ['ccd', 'data'], true), 404); return view('cargas.pending', ['kind' => strtoupper($kind)]); }
+    public function index(Request $request) { return $this->blade($request, 'cargas.index', ['imports' => $this->history($request)]); }
+    public function asignacion(Request $request) { return $this->blade($request, 'cargas.asignacion', ['imports' => $this->history($request, 'asignacion')]); }
+    public function pagos(Request $request) { return $this->blade($request, 'cargas.pagos', ['imports' => $this->history($request, 'pagos')]); }
+    public function pending(Request $request, string $kind) { abort_unless(in_array($kind, ['ccd', 'data'], true), 404); return $this->blade($request, 'cargas.pending', ['kind' => strtoupper($kind)]); }
 
     public function template(Request $request, ImportService $imports, DocumentService $documents)
     {
@@ -73,6 +74,7 @@ class CargasController extends Controller
     public function storeEvolutivo(UploadRequest $request, ImportService $imports) { return $this->legacyStore($request, $imports, 'evolutivo'); }
 
     private function legacyStore(UploadRequest $request, ImportService $imports, string $type) { return response()->json(['success' => true, 'summary' => $imports->import($request->file('file'), $type, $request->user(), $request->validated('modo', 'merge'))]); }
+    private function blade(Request $request, string $view, array $data) { return $request->header('X-Inertia') ? Inertia::location($request->fullUrl()) : view($view, $data); }
     private function history(Request $request, ?string $type = null) { return Importacion::query()->when(! $request->user()->isAdmin(), fn ($query) => $query->where('usuario_id', $request->user()->id))->when($type, fn ($query) => $query->where('tipo', $type))->with('usuario:id,nombre,usuario')->latest()->paginate(10)->withQueryString(); }
     private function authorizeImport(Request $request, Importacion $importacion): void { abort_unless($importacion->canBeViewedBy($request->user()), 403); }
     private function statusPayload(Importacion $import): array { return ['id' => $import->id, 'estado' => $import->estado, 'etapa' => $import->etapa, 'periodo' => $import->periodo, 'total_filas' => $import->total_filas, 'filas_procesadas' => $import->filas_procesadas, 'filas_validas' => $import->filas_validas, 'insertadas' => $import->insertadas, 'actualizadas' => $import->actualizadas, 'omitidas' => $import->omitidas, 'fallidas' => $import->fallidas, 'mensaje' => $import->mensaje, 'errores_url' => $import->errores()->exists() ? route('cargas.importaciones.errores', $import) : null, 'detail_url' => route('cargas.importaciones.show', $import)]; }

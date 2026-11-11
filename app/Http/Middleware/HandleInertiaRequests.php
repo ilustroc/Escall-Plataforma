@@ -11,7 +11,10 @@ class HandleInertiaRequests extends Middleware
     /** PHPUnit requests do not perform the initial HTML visit that supplies Vite's asset version. */
     public function version(Request $request): ?string
     {
-        return app()->environment('testing') ? null : parent::version($request);
+        // The Inertia middleware compares an absent X-Inertia-Version as an
+        // empty string. Returning null in tests makes every Inertia visit look
+        // like an asset-version mismatch and produces a 409 response.
+        return app()->environment('testing') ? '' : parent::version($request);
     }
 
     public function share(Request $request): array
