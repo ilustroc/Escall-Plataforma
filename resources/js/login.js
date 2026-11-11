@@ -1,3 +1,5 @@
+import '../css/app.css';
+
 document.addEventListener('DOMContentLoaded', () => {
     const input = document.querySelector('[data-password-input]');
     const toggle = document.querySelector('[data-password-toggle]');

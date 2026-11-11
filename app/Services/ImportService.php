@@ -6,6 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\{DB, Validator};
 use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -14,7 +15,7 @@ use InvalidArgumentException;
 class ImportService
 {
     public const HEADERS = [
-        'data'=>['cartera','dni','titular','codigo','entidad','cosecha','producto','sub_producto','historico','departamento','rango','deuda_total','deuda_capital','campana'],
+        'data'=>['cartera','documento','nombre','codigo','entidad','cosecha','producto','sub_producto','departamento','deuda_total','deuda_capital','campana','FEC_PRO'],
         'pagos'=>['codigo','fecha','monto','asesor','operacion','observacion'],
         'seguimientos'=>['codigo','fecha','hora','tipo','descripcion','estado'],
         'evolutivo'=>['dni','tipo_acuerdo','fecha','monto','estado','gestion'],
@@ -29,7 +30,7 @@ class ImportService
         catch (\Throwable $e) { report($e); throw ValidationException::withMessages(['file'=>'No se pudo interpretar el archivo.']); }
         try {
             $map = [];
-            $aliases = ['documento'=>'dni','fechapago'=>'fecha','fecha_pago'=>'fecha','montopago'=>'monto','monto_pago'=>'monto','tipo_de_acuerdo'=>'tipo_acuerdo','tipodeacuerdo'=>'tipo_acuerdo'];
+            $aliases = ['fec_pro'=>'FEC_PRO','fechapago'=>'fecha','fecha_pago'=>'fecha','montopago'=>'monto','monto_pago'=>'monto','tipo_de_acuerdo'=>'tipo_acuerdo','tipodeacuerdo'=>'tipo_acuerdo'];
             for ($column=1; $column<=Coordinate::columnIndexFromString($sheet->getHighestColumn()); $column++) {
                 $raw = (string)$sheet->getCell(Coordinate::stringFromColumnIndex($column).'1')->getValue();
                 $key = trim(preg_replace('/[^a-z0-9]+/i','_',iconv('UTF-8','ASCII//TRANSLIT//IGNORE',mb_strtolower(trim($raw, "\xEF\xBB\xBF \t\r\n")))),'_');
@@ -41,10 +42,22 @@ class ImportService
             $buffer=[]; $skipped=0;
             for ($row=2; $row<=$sheet->getHighestRow(); $row++) {
                 $data=[];
-                foreach (self::HEADERS[$type] as $key) $data[$key] = trim((string)$sheet->getCell(Coordinate::stringFromColumnIndex($map[$key]).$row)->getValue());
+                foreach (self::HEADERS[$type] as $key) {
+                    $cell = $sheet->getCell(Coordinate::stringFromColumnIndex($map[$key]).$row);
+                    $data[$key] = trim((string) $cell->getValue());
+                    if ($type === 'data' && $key === 'codigo' && self::hasLostCodePrecision($data[$key], $cell->getDataType())) {
+                        throw ValidationException::withMessages(['file' => "Fila {$row}: el código debe cargarse como texto; el archivo perdió precisión o usa notación científica."]);
+                    }
+                }
                 if (!array_filter($data,fn($value)=>$value!=='')) { $skipped++; continue; }
                 foreach (['deuda_total','deuda_capital','monto'] as $field) if (array_key_exists($field,$data)) $data[$field] = self::number($data[$field]);
                 if (isset($data['fecha'])) $data['fecha'] = self::date($data['fecha']);
+                if ($type === 'data') {
+                    $data['FEC_PRO'] = self::processDate($data['FEC_PRO']);
+                    if ($data['FEC_PRO'] === null) {
+                        throw ValidationException::withMessages(['file' => "Fila {$row}: FEC_PRO debe ser una fecha válida en formato YYYYMMDD."]);
+                    }
+                }
                 if ($type==='seguimientos') {
                     $data['tipo'] = $data['tipo'] ?: 'seguimiento';
                     if (is_numeric($data['hora']) && (float)$data['hora']>=0 && (float)$data['hora']<1) $data['hora'] = gmdate('H:i:s',(int)round((float)$data['hora']*86400));
@@ -54,7 +67,7 @@ class ImportService
                 if ($type==='evolutivo') $data['gestion'] = $data['gestion'] ?: (mb_strtoupper($data['estado'])==='CUMPLIDO'?'Realizado':'Pendiente');
                 $rules=[];
                 foreach (self::HEADERS[$type] as $key) $rules[$key] = 'nullable|string|max:255';
-                foreach (['codigo','dni'] as $key) if (array_key_exists($key,$data)) $rules[$key] = 'required|string|max:'.($key==='dni'?30:100);
+                foreach (['codigo','documento','dni'] as $key) if (array_key_exists($key,$data)) $rules[$key] = 'required|string|max:'.(in_array($key,['documento','dni'],true)?30:100);
                 foreach (['deuda_total','deuda_capital','monto'] as $key) if (array_key_exists($key,$data)) $rules[$key] = ($type==='pagos'?'required':'nullable').'|numeric|min:0|max:9999999999999999';
                 if (isset($rules['fecha'])) $rules['fecha']='required|date_format:Y-m-d';
                 if (isset($rules['tipo_acuerdo'])) $rules['tipo_acuerdo']='required|string|max:100';
@@ -66,15 +79,23 @@ class ImportService
                 $buffer[]=$data;
             }
             if (!$buffer) throw ValidationException::withMessages(['file'=>'El archivo no contiene filas válidas.']);
-            return DB::transaction(function () use ($buffer,$type,$user,$mode,$skipped) {
-                $counts=['inserted'=>0,'updated'=>0,'skipped'=>$skipped];
+            $period = null;
+            if ($type === 'data') {
+                $periods = array_values(array_unique(array_column($buffer, 'FEC_PRO')));
+                if (count($periods) !== 1) {
+                    throw ValidationException::withMessages(['file' => 'La carga de cartera debe contener un único FEC_PRO válido.']);
+                }
+                $period = $periods[0];
+            }
+            return DB::transaction(function () use ($buffer,$type,$user,$mode,$skipped,$period) {
+                $counts=['inserted'=>0,'updated'=>0,'skipped'=>$skipped,'failed'=>0];
                 if ($type==='evolutivo' && $mode==='replace') {
                     SeguimientoEvolutivo::query()->whereIn('fecha',array_unique(array_column($buffer,'fecha')))->when(!$user->isAdmin(),fn($q)=>$q->where('usuario_id',$user->id))->delete();
                 }
                 foreach ($buffer as $data) {
                     if ($type==='seguimientos') { Seguimiento::create($data+['usuario_id'=>$user->id]); $counts['inserted']++; continue; }
                     [$class,$key] = match($type) {
-                        'data'=>[Cliente::class,['codigo'=>$data['codigo']]],
+                        'data'=>[Cliente::class,['codigo'=>$data['codigo'],'FEC_PRO'=>$data['FEC_PRO']]],
                         'pagos'=>[Pago::class,array_intersect_key($data,array_flip(['codigo','fecha','monto','operacion']))],
                         'evolutivo'=>[SeguimientoEvolutivo::class,array_intersect_key($data,array_flip(['dni','tipo_acuerdo','fecha']))+['usuario_id'=>$user->id]],
                     };
@@ -83,9 +104,11 @@ class ImportService
                     if ($type==='pagos' && $existed) $data=array_intersect_key($data,array_flip(['asesor','observacion']));
                     elseif ($type!=='data') $data['usuario_id']=$user->id;
                     $model->fill($data);
+                    if ($type === 'data' && (! $existed || $model->isDirty())) $model->fecha_carga = now();
                     if (!$existed) $counts['inserted']++; elseif ($model->isDirty()) $counts['updated']++; else $counts['skipped']++;
                     $model->save();
                 }
+                if ($period !== null) $counts['period'] = $period;
                 return $counts;
             });
         } finally { $sheet->getParent()?->disconnectWorksheets(); }
@@ -117,6 +140,21 @@ class ImportService
         return null;
     }
 
+    private static function processDate(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+        if (! preg_match('/^\d{8}$/', $value)) return null;
+        $date = \DateTimeImmutable::createFromFormat('!Ymd', $value);
+        $errors = \DateTimeImmutable::getLastErrors();
+        return $date && ($errors === false || (! $errors['warning_count'] && ! $errors['error_count'])) && $date->format('Ymd') === $value ? $value : null;
+    }
+
+    private static function hasLostCodePrecision(string $value, string $dataType): bool
+    {
+        if (preg_match('/[eE][+-]?\d+/', $value)) return true;
+        return $dataType === DataType::TYPE_NUMERIC && strlen(preg_replace('/\D/', '', $value)) > 15;
+    }
+
     public function template(string $type): array
     {
         abort_unless(isset(self::HEADERS[$type]),422);
@@ -126,6 +164,7 @@ class ImportService
             $letter=Coordinate::stringFromColumnIndex($index+1);
             $sheet->getColumnDimension($letter)->setAutoSize(true);
             if ($header==='fecha') $sheet->getStyle($letter.'2:'.$letter.'999')->getNumberFormat()->setFormatCode('yyyy-mm-dd');
+            if (in_array($header, ['codigo', 'documento', 'FEC_PRO'], true)) $sheet->getStyle($letter.'2:'.$letter.'999')->getNumberFormat()->setFormatCode('@');
         }
         ob_start();
         try { (new Xlsx($book))->save('php://output'); $bytes=(string)ob_get_contents(); }

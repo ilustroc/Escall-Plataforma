@@ -23,7 +23,7 @@ async function upload() {
   const result = await submit(endpoint.value, body, { headers: { 'Content-Type': 'multipart/form-data' } });
   if (result?.success) {
     const count = result.summary || {};
-    success.value = `Carga procesada: ${count.inserted || 0} nuevos, ${count.updated || 0} actualizados y ${count.skipped || 0} omitidos.`;
+    success.value = `Carga procesada: ${count.inserted || 0} nuevos, ${count.updated || 0} actualizados, ${count.skipped || 0} omitidos y ${count.failed || 0} fallidos.${count.period ? ` Período: ${count.period}.` : ''}`;
     file.value = null; if (input.value) input.value.value = '';
   }
 }

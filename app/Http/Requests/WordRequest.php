@@ -11,7 +11,7 @@ class WordRequest extends FormRequest {
         $this->merge(['usar_cuotas'=>$this->boolean('usar_cuotas')]);
     }
     public function rules(): array {
-        $rules = ['cliente_id'=>'required|integer|exists:cartera_clientes,id','tipo_documento'=>'required|in:convenio,cancelacion','cuentas_seleccionadas'=>'required|array|min:1|max:5','cuentas_seleccionadas.*'=>'required|string|max:100|distinct','tipo_facilidad'=>'required|string|max:255','fecha_solicitud'=>'required|date_format:Y-m-d','cuenta_banco'=>['required','string',Rule::in(array_keys(config('platform.bank_accounts',[])))],'usar_cuotas'=>'boolean','numero_cuotas'=>'nullable|required_if:tipo_documento,convenio|integer|min:1|max:600'];
+        $rules = ['cliente_id'=>'required|integer|exists:Cartera_Mensual,id','tipo_documento'=>'required|in:convenio,cancelacion','cuentas_seleccionadas'=>'required|array|min:1|max:5','cuentas_seleccionadas.*'=>'required|string|max:100|distinct','tipo_facilidad'=>'required|string|max:255','fecha_solicitud'=>'required|date_format:Y-m-d','cuenta_banco'=>['required','string',Rule::in(array_keys(config('platform.bank_accounts',[])))],'usar_cuotas'=>'boolean','numero_cuotas'=>'nullable|required_if:tipo_documento,convenio|integer|min:1|max:600'];
         foreach (['cuota_inicial','monto_convenio','primera_cuota','cancelacion','cuota_1','cuota_2'] as $field) $rules[$field] = 'nullable|numeric|min:0|max:999999999999';
         foreach (['f_cuota','fecha_pago','fecha_cuota_1','fecha_cuota_2'] as $field) $rules[$field] = 'nullable|date_format:Y-m-d';
         foreach (['monto_convenio','primera_cuota','f_cuota'] as $field) $rules[$field] .= '|required_if:tipo_documento,convenio';

@@ -2,40 +2,41 @@
 
 namespace App\Services;
 
-use App\Models\{Cliente, Pago, Seguimiento, SeguimientoEvolutivo, User};
+use App\Models\{Documento, Pago, Propuesta, User};
+use Illuminate\Support\Facades\DB;
 
 class DashboardMetricsService
 {
     public function for(User $user): array
     {
-        $portfolio = Cliente::query()
-            ->selectRaw('COUNT(*) as cuentas, COUNT(DISTINCT dni) as clientes, COALESCE(SUM(deuda_total), 0) as cartera_total')
-            ->first();
         $scope = fn ($query) => $user->isAdmin() ? $query : $query->where('usuario_id', $user->id);
-        $payments = Pago::query()->selectRaw('COUNT(*) as registros, COALESCE(SUM(monto), 0) as monto')->first();
-        $followups = Seguimiento::query()->tap($scope);
-        $evolution = SeguimientoEvolutivo::query()->tap($scope);
+        $documents = Documento::query()->tap($scope)->count();
+        $proposals = Propuesta::query()->tap($scope)->count();
 
         return [
-            'cartera_total' => (float) $portfolio->cartera_total,
-            'clientes' => (int) $portfolio->clientes,
-            'cuentas' => (int) $portfolio->cuentas,
-            'pagos_registrados' => (int) $payments->registros,
-            'pagos_total' => (float) $payments->monto,
-            'seguimientos_hoy' => (clone $followups)->whereDate('fecha', today())->count(),
-            'seguimientos_registrados' => (clone $followups)->count(),
-            'pendientes' => (clone $evolution)->where('gestion', 'Pendiente')->count(),
+            'documents' => $documents,
+            'proposals' => $proposals,
+            'total' => $documents + $proposals,
         ];
     }
 
-    public function recentActivity(User $user): array
+    public function recentPayments(User $user): array
     {
-        $query = Seguimiento::query()
-            ->select(['id', 'usuario_id', 'codigo', 'fecha', 'hora', 'tipo', 'descripcion', 'estado'])
-            ->with('cliente:id,codigo,dni,titular')
-            ->orderByDesc('fecha')->orderByDesc('hora')->orderByDesc('id');
+        $clientesVigentes = CarteraMensualQuery::vigentes()
+            ->select(['id', 'codigo', 'documento', 'nombre', 'cartera']);
+
+        $query = Pago::query()
+            ->leftJoinSub($clientesVigentes, 'cliente', 'cliente.codigo', '=', 'pagos.codigo')
+            ->select([
+                'pagos.id', 'pagos.usuario_id', 'pagos.codigo', 'pagos.fecha', 'pagos.monto',
+                DB::raw('cliente.documento as cliente_dni'),
+                DB::raw('cliente.nombre as cliente_titular'),
+                DB::raw('cliente.cartera as cliente_cartera'),
+            ])
+            ->orderByDesc('pagos.fecha')
+            ->orderByDesc('pagos.id');
         if (! $user->isAdmin()) {
-            $query->where('usuario_id', $user->id);
+            $query->where('pagos.usuario_id', $user->id);
         }
 
         return $query->limit(6)->get()->all();

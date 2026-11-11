@@ -11,6 +11,7 @@ Route::post('/logout',[AuthController::class,'logout'])->middleware('auth')->nam
 Route::middleware(['auth','active'])->group(function (): void {
     Route::get('/inicio',[DashboardController::class,'index'])->name('dashboard');
     Route::get('/clientes',[ClienteController::class,'show'])->name('clientes.show');
+    Route::get('/api/clientes/sugerencias',[ClienteController::class,'suggestions'])->name('clientes.suggestions');
     Route::get('/api/clientes',[ClienteController::class,'search'])->name('clientes.search');
     Route::post('/clientes/generar-word',[ClienteController::class,'generateWord'])->name('clientes.word');
     Route::get('/cargas',[CargasController::class,'index'])->name('cargas.index');

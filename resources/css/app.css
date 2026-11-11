@@ -108,3 +108,121 @@
 @media (prefers-reduced-motion: reduce) {
     .login-flow { animation: none; }
 }
+
+/* Blade administrative layout: sidebar, global client search and dashboard. */
+@layer components {
+    .admin-shell { @apply min-h-screen bg-[#F1F5F9]; }
+    .app-sidebar {
+        @apply fixed inset-y-0 left-0 z-50 flex w-[250px] flex-col bg-[#07142B] text-white shadow-xl;
+        transition: width 180ms ease, transform 180ms ease;
+    }
+    .sidebar-brand { @apply relative flex h-20 items-center border-b border-white/10 px-5; }
+    .sidebar-logo { @apply flex min-w-0 flex-1 items-center; }
+    .sidebar-logo-full { @apply h-auto w-[148px] max-w-full; }
+    .sidebar-logo-mark { @apply hidden h-9 w-9 object-contain; }
+    .sidebar-toggle, .sidebar-close-mobile { @apply inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155EEF]; }
+    .sidebar-toggle svg, .sidebar-close-mobile svg, .sidebar-link svg, .topbar-icon-button svg, .client-search-icon, .generation-card-icon svg, .recent-payments-icon svg, .recent-payments-empty svg { @apply h-5 w-5 fill-none stroke-current stroke-[1.8]; }
+    .sidebar-close-mobile { @apply hidden; }
+    .sidebar-nav { @apply flex-1 space-y-1 overflow-y-auto px-3 py-5; }
+    .sidebar-section-label { @apply mb-2 px-3 text-[10px] font-bold uppercase tracking-[.18em] text-slate-500; }
+    .sidebar-link { @apply relative flex min-h-11 items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155EEF]; }
+    .sidebar-link svg { @apply shrink-0; }
+    .sidebar-link.is-active { @apply bg-[#155EEF] text-white shadow-sm; }
+    .sidebar-footer { @apply border-t border-white/10 p-3; }
+    .sidebar-logout { @apply w-full; }
+    .admin-content { @apply min-h-screen pl-[250px]; transition: padding-left 180ms ease; }
+    .app-topbar { @apply sticky top-0 z-30 grid h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-200 bg-white px-4 sm:px-6; }
+    .topbar-start, .topbar-user { @apply flex items-center gap-2; }
+    .topbar-icon-button { @apply inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-slate-600 transition hover:bg-slate-100 hover:text-[#155EEF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#155EEF]; }
+    .mobile-menu-button { @apply hidden; }
+    .topbar-user { @apply justify-end; }
+    .topbar-user-details { @apply hidden text-right sm:block; }
+    .topbar-user-details p { @apply max-w-40 truncate text-sm font-semibold text-slate-800; }
+    .topbar-user-details span { @apply text-xs capitalize text-slate-500; }
+    .user-avatar { @apply inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#EEF4FF] text-xs font-bold text-[#155EEF]; }
+    .client-search { @apply relative mx-auto w-full max-w-[680px]; }
+    .client-search-icon { @apply pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400; }
+    .client-search-input { @apply h-10 w-full rounded-md border border-[#E2E8F0] bg-slate-50 py-2 pl-10 pr-3 text-sm text-[#0F172A] shadow-sm outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-[#155EEF] focus:bg-white focus:ring-4 focus:ring-[#155EEF]/15; }
+    .client-search-results { @apply absolute left-0 right-0 top-[calc(100%+8px)] z-50 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-[0_14px_34px_rgba(7,20,43,.15)]; }
+    .client-search-option { @apply block w-full px-4 py-3 text-left transition hover:bg-[#F8FAFC] focus:bg-[#EEF4FF] focus:outline-none; }
+    .client-search-option[aria-selected="true"] { @apply bg-[#EEF4FF]; }
+    .client-search-document { @apply block text-xs font-semibold tabular-nums text-[#155EEF]; }
+    .client-search-name { @apply mt-1 block truncate text-sm font-semibold text-slate-800; }
+    .client-search-meta { @apply mt-1 block truncate text-xs text-slate-500; }
+    .client-search-option mark { @apply rounded-sm bg-blue-100 px-0.5 font-semibold text-[#073DC7]; }
+    .client-search-empty { @apply px-4 py-5 text-center text-sm text-slate-500; }
+    .notifications { @apply relative; }
+    .notifications-panel { @apply absolute right-0 top-[calc(100%+8px)] z-50 w-72 rounded-lg border border-slate-200 bg-white p-4 shadow-[0_14px_34px_rgba(7,20,43,.15)]; }
+    .admin-main { @apply mx-auto max-w-[1440px] p-4 sm:p-6; }
+    .dashboard-heading { @apply mb-5 flex flex-wrap items-end justify-between gap-4; }
+    .dashboard-eyebrow { @apply text-xs font-bold uppercase tracking-[.18em] text-[#155EEF]; }
+    .dashboard-heading h1 { @apply mt-2 text-2xl font-bold tracking-tight text-[#0F172A] sm:text-3xl; }
+    .dashboard-heading p:not(.dashboard-eyebrow) { @apply mt-2 text-sm text-slate-500; }
+    .dashboard-grid { @apply grid max-w-5xl gap-5; }
+    .generation-card, .recent-payments-card { @apply rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(7,20,43,.04),0_8px_24px_rgba(7,20,43,.04)]; }
+    .generation-card { @apply flex items-start gap-4 p-5 sm:p-6; }
+    .generation-card-icon { @apply inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#EEF4FF] text-[#155EEF]; }
+    .generation-card-icon svg { @apply h-6 w-6; }
+    .dashboard-card-label { @apply text-xs font-bold uppercase tracking-[.13em] text-slate-500; }
+    .generation-total { @apply mt-2 text-4xl font-bold tracking-tight text-[#0F172A] tabular-nums; }
+    .generation-summary { @apply mt-2 text-sm text-slate-500; }
+    .recent-payments-card { @apply overflow-hidden; }
+    .dashboard-card-header { @apply flex items-start justify-between border-b border-slate-200 px-5 py-4 sm:px-6; }
+    .dashboard-card-header h2 { @apply text-base font-semibold text-[#0F172A]; }
+    .dashboard-card-header p { @apply mt-1 text-xs text-slate-500; }
+    .recent-payments-icon { @apply inline-flex h-9 w-9 items-center justify-center rounded-md bg-slate-100 text-slate-600; }
+    .recent-payment-list { @apply divide-y divide-slate-100; }
+    .recent-payment { @apply flex gap-4 px-5 py-4 sm:px-6; }
+    .recent-payment-copy { @apply min-w-0 flex-1; }
+    .recent-payment-label { @apply text-[11px] font-bold uppercase tracking-wide text-[#155EEF]; }
+    .recent-payment-name { @apply mt-1 truncate text-sm font-semibold text-slate-800; }
+    .recent-payment-meta { @apply mt-1 truncate text-xs text-slate-500; }
+    .recent-payment-amount { @apply shrink-0 text-right; }
+    .recent-payment-amount time { @apply block text-xs text-slate-500; }
+    .recent-payment-amount strong { @apply mt-1 block text-sm font-semibold text-emerald-700 tabular-nums; }
+    .recent-payments-empty { @apply flex items-center gap-3 px-5 py-8 text-slate-400 sm:px-6; }
+    .recent-payments-empty svg { @apply h-8 w-8 shrink-0; }
+    .recent-payments-empty p { @apply text-sm font-semibold text-slate-600; }
+    .recent-payments-empty span { @apply mt-1 block text-xs text-slate-500; }
+}
+
+html.sidebar-collapsed .app-sidebar { width: 72px; }
+html.sidebar-collapsed .admin-content { padding-left: 72px; }
+html.sidebar-collapsed .sidebar-brand { @apply justify-center px-2; }
+html.sidebar-collapsed .sidebar-logo { @apply flex-none; }
+html.sidebar-collapsed .sidebar-logo-full, html.sidebar-collapsed .sidebar-label, html.sidebar-collapsed .sidebar-section-label { display: none; }
+html.sidebar-collapsed .sidebar-logo-mark { display: block; }
+html.sidebar-collapsed .sidebar-toggle { @apply absolute -right-4 top-1/2 -translate-y-1/2 border border-slate-200 bg-white text-slate-600 shadow-sm; }
+html.sidebar-collapsed .sidebar-toggle svg { transform: rotate(180deg); }
+html.sidebar-collapsed .sidebar-link { @apply justify-center px-2; }
+html.sidebar-collapsed .sidebar-link[data-tooltip]::after { content: attr(data-tooltip); @apply pointer-events-none absolute left-[calc(100%+10px)] z-50 hidden whitespace-nowrap rounded-md bg-[#07142B] px-2.5 py-1.5 text-xs font-medium text-white shadow-lg; }
+html.sidebar-collapsed .sidebar-link[data-tooltip]:hover::after, html.sidebar-collapsed .sidebar-link[data-tooltip]:focus-visible::after { display: block; }
+html:not(.sidebar-ready) .app-sidebar, html:not(.sidebar-ready) .admin-content { transition: none; }
+
+@media (max-width: 1023px) {
+    .app-sidebar { transform: translateX(-100%); width: 250px; }
+    .admin-content { padding-left: 0; }
+    .sidebar-toggle { display: none; }
+    .sidebar-close-mobile { display: inline-flex; }
+    .sidebar-brand { @apply justify-between; }
+    .mobile-menu-button { display: inline-flex; }
+    .desktop-menu-button { display: none; }
+    html.mobile-sidebar-open .app-sidebar { transform: translateX(0); }
+    .sidebar-overlay { @apply fixed inset-0 z-40 bg-[#07142B]/50; }
+    html.sidebar-collapsed .app-sidebar { width: 250px; }
+    html.sidebar-collapsed .sidebar-logo-full, html.sidebar-collapsed .sidebar-label, html.sidebar-collapsed .sidebar-section-label { display: initial; }
+    html.sidebar-collapsed .sidebar-logo-mark { display: none; }
+    html.sidebar-collapsed .sidebar-link { @apply justify-start px-3; }
+}
+
+@media (max-width: 640px) {
+    .app-topbar { @apply h-auto min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] py-3; }
+    .topbar-user-details { display: none; }
+    .client-search-input { @apply text-xs; }
+    .client-search-results { @apply fixed left-3 right-3 top-16; }
+    .admin-main { @apply p-4; }
+    .dashboard-heading h1 { @apply text-2xl; }
+    .recent-payment { @apply flex-col gap-2; }
+    .recent-payment-amount { @apply flex items-center justify-between text-left; }
+    .recent-payment-amount strong { @apply mt-0; }
+}

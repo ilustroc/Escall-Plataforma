@@ -18,7 +18,7 @@ class SeguimientoController extends Controller
     {
         $filters = $request->validate(['todos' => ['nullable', 'boolean'], 'fecha' => ['nullable', 'date_format:Y-m-d'], 'page' => ['nullable', 'integer', 'min:1']]);
         $query = Seguimiento::query()->select(['id','usuario_id','codigo','fecha','hora','tipo','descripcion','estado'])
-            ->with('cliente:id,codigo,dni,titular')->orderByDesc('fecha')->orderByDesc('hora')->orderByDesc('id');
+            ->with('cliente')->orderByDesc('fecha')->orderByDesc('hora')->orderByDesc('id');
         if (!$request->user()->isAdmin() || !$request->boolean('todos')) {
             $query->where('usuario_id', $request->user()->id);
         }

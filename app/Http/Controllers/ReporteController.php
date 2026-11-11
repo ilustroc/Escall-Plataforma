@@ -28,12 +28,12 @@ class ReporteController extends Controller
         $empty = ['data' => [], 'links' => [], 'total' => 0, 'from' => null, 'to' => null];
         $documents = $tab === 'acuerdos'
             ? Documento::query()->select(['id','cliente_id','usuario_id','nombre_archivo','tipo_mime','creado_en'])
-                ->with(['cliente:id,dni,titular', 'usuario:id,nombre,usuario'])->tap($scope)->tap($between)
+                ->with(['cliente:id,documento,nombre', 'usuario:id,nombre,usuario'])->tap($scope)->tap($between)
                 ->orderByDesc('creado_en')->paginate(10, ['*'], 'acuerdos_page')->withQueryString()
             : $empty;
         $proposals = $tab === 'propuestas'
             ? Propuesta::query()->select(['id','cliente_id','usuario_id','propuesta_cliente','fecha_pago','nombre_archivo','tipo_archivo','creado_en'])
-                ->with(['cliente:id,dni,titular', 'usuario:id,nombre,usuario'])->tap($scope)->tap($between)
+                ->with(['cliente:id,documento,nombre', 'usuario:id,nombre,usuario'])->tap($scope)->tap($between)
                 ->orderByDesc('creado_en')->paginate(10, ['*'], 'propuestas_page')->withQueryString()
             : $empty;
 

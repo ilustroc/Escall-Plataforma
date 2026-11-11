@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\{ClienteSearchRequest, WordRequest};
+use App\Http\Requests\{ClienteAutocompleteRequest, ClienteSearchRequest, WordRequest};
 use App\Models\Cliente;
-use App\Services\{ClientService, DocumentService};
+use App\Services\{CarteraMensualQuery, ClientService, DocumentService};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -12,9 +12,9 @@ class ClienteController extends Controller
 {
     public function show(Request $request)
     {
-        $dni = trim((string) $request->query('dni'));
-        abort_if($dni === '', 404);
-        $accounts = Cliente::query()->where('dni', $dni)->orderBy('codigo')->get(['id','cartera','dni','titular','codigo','entidad','cosecha','producto','sub_producto','historico','departamento','rango','deuda_total','deuda_capital','campana']);
+        $documento = trim((string) $request->query('dni'));
+        abort_if($documento === '', 404);
+        $accounts = CarteraMensualQuery::vigentes()->where('documento', $documento)->orderBy('codigo')->get(['id','cartera','documento','nombre','codigo','entidad','cosecha','producto','sub_producto','departamento','deuda_total','deuda_capital','campana','FEC_PRO']);
         abort_if($accounts->isEmpty(), 404);
 
         return Inertia::render('Clientes/Show', [
@@ -29,10 +29,34 @@ class ClienteController extends Controller
 
     public function search(ClienteSearchRequest $request, ClientService $clients)
     {
-        $filters = $request->safe()->only(['dni', 'codigo', 'titular', 'cartera']);
-        $rows = $clients->query($filters)->orderBy('dni')->orderBy('codigo')->limit(200)->get(['id','dni','titular','codigo','cartera','entidad','producto','sub_producto','deuda_total','deuda_capital']);
+        $filters = $request->safe()->only(['documento', 'codigo', 'nombre', 'cartera', 'dni', 'titular']);
+        $rows = $clients->query($filters)->orderBy('documento')->orderBy('codigo')->limit(200)->get(['id','documento','nombre','codigo','cartera','entidad','producto','sub_producto','deuda_total','deuda_capital']);
 
         return response()->json(['ok' => true, 'data' => $rows]);
+    }
+
+    public function suggestions(ClienteAutocompleteRequest $request)
+    {
+        $term = mb_strtolower($request->validated('q'), 'UTF-8');
+        $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
+        $prefix = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
+
+        $rows = CarteraMensualQuery::vigentes()
+            ->where(function ($query) use ($like): void {
+                $query->whereRaw('LOWER(documento) LIKE ? ESCAPE \'\\\'', [$like])
+                    ->orWhereRaw('LOWER(codigo) LIKE ? ESCAPE \'\\\'', [$like])
+                    ->orWhereRaw('LOWER(nombre) LIKE ? ESCAPE \'\\\'', [$like]);
+            })
+            ->orderByRaw(
+                'CASE WHEN LOWER(documento) = ? OR LOWER(codigo) = ? THEN 0 WHEN LOWER(documento) LIKE ? ESCAPE \'\\\' OR LOWER(codigo) LIKE ? ESCAPE \'\\\' OR LOWER(nombre) LIKE ? ESCAPE \'\\\' THEN 1 ELSE 2 END',
+                [$term, $term, $prefix, $prefix, $prefix],
+            )
+            ->orderBy('documento')
+            ->orderBy('codigo')
+            ->limit(10)
+            ->get(['id', 'documento', 'nombre', 'codigo', 'cartera']);
+
+        return response()->json(['data' => $rows]);
     }
 
     public function generateWord(WordRequest $request, DocumentService $documents)

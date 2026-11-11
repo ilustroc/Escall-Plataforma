@@ -2,22 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ClienteSearchRequest;
-use App\Services\{ClientService, DashboardMetricsService};
-use Inertia\Inertia;
+use App\Services\DashboardMetricsService;
 
 class DashboardController extends Controller
 {
-    public function index(ClienteSearchRequest $request, ClientService $clients, DashboardMetricsService $metrics)
+    public function index(\Illuminate\Http\Request $request, DashboardMetricsService $metrics)
     {
-        $filters = $request->safe()->only(['dni', 'codigo', 'titular', 'cartera']);
-
-        return Inertia::render('Dashboard/Index', [
-            'filters' => $filters,
-            'clientes' => $clients->grouped($filters),
-            'carteras' => \App\Models\Cliente::query()->whereNotNull('cartera')->distinct()->orderBy('cartera')->pluck('cartera')->values(),
-            'stats' => $metrics->for($request->user()),
-            'recentActivity' => $metrics->recentActivity($request->user()),
+        return view('dashboard.index', [
+            'generationStats' => $metrics->for($request->user()),
+            'recentPayments' => $metrics->recentPayments($request->user()),
         ]);
     }
 }

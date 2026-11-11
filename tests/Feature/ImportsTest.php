@@ -20,14 +20,14 @@ class ImportsTest extends TestCase
             ->assertHeader('Content-Disposition');
     }
 
-    public function test_administrator_can_import_legacy_data_and_payments_from_utf8_csv(): void
+    public function test_administrator_can_import_monthly_data_and_payments_from_utf8_csv(): void
     {
         $this->actingAs(User::factory()->administrator()->create());
         $this->postJson('/cargas/data', ['file' => $this->csv('data.csv', [
-            'cartera,dni,titular,codigo,entidad,cosecha,producto,sub_producto,historico,departamento,rango,deuda_total,deuda_capital,campana',
-            'Cartera,12345678,Cliente,C-100,Entidad,2026,Tarjeta,Classic,,Lima,1,"1,500.50","1,000.00",Pruebas',
-        ])])->assertSuccessful()->assertJsonPath('success', true);
-        $this->assertDatabaseHas('cartera_clientes', ['codigo' => 'C-100', 'dni' => '12345678']);
+            'cartera,documento,nombre,codigo,entidad,cosecha,producto,sub_producto,departamento,deuda_total,deuda_capital,campana,FEC_PRO',
+            'Cartera,12345678,Cliente,C-100,Entidad,2026,Tarjeta,Classic,Lima,"1,500.50","1,000.00",Pruebas,20261101',
+        ])])->assertSuccessful()->assertJsonPath('success', true)->assertJsonPath('summary.period', '20261101');
+        $this->assertDatabaseHas('Cartera_Mensual', ['codigo' => 'C-100', 'documento' => '12345678', 'FEC_PRO' => '20261101']);
 
         $this->postJson('/cargas/pagos', ['file' => $this->csv('pagos.csv', [
             'codigo,fecha,monto,asesor,operacion,observacion',
@@ -60,7 +60,7 @@ class ImportsTest extends TestCase
             ->assertUnprocessable()->assertJsonValidationErrors('file');
         $this->postJson('/cargas/data', ['file' => UploadedFile::fake()->createWithContent('data.xlsx', '{"not":"a workbook"}')])
             ->assertUnprocessable()->assertJsonValidationErrors('file');
-        $this->assertDatabaseCount('cartera_clientes', 0);
+        $this->assertDatabaseCount('Cartera_Mensual', 0);
     }
 
     public function test_upload_rejects_file_size_and_row_limits(): void
@@ -69,8 +69,8 @@ class ImportsTest extends TestCase
         $tooLarge = UploadedFile::fake()->createWithContent('data.csv', str_repeat('a', 10 * 1024 * 1024 + 1));
         $this->postJson('/cargas/data', ['file' => $tooLarge])->assertUnprocessable()->assertJsonValidationErrors('file');
 
-        $rows = ['cartera,dni,titular,codigo,entidad,cosecha,producto,sub_producto,historico,departamento,rango,deuda_total,deuda_capital,campana'];
-        for ($i = 1; $i <= 10001; $i++) $rows[] = "C,{$i},Cliente,C-{$i},E,2026,P,S,,L,1,1,1,C";
+        $rows = ['cartera,documento,nombre,codigo,entidad,cosecha,producto,sub_producto,departamento,deuda_total,deuda_capital,campana,FEC_PRO'];
+        for ($i = 1; $i <= 10001; $i++) $rows[] = "C,{$i},Cliente,C-{$i},E,2026,P,S,L,1,1,C,20261101";
         $this->postJson('/cargas/data', ['file' => $this->csv('many.csv', $rows)])
             ->assertUnprocessable()->assertJsonValidationErrors('file');
     }

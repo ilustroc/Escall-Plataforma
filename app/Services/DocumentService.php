@@ -13,7 +13,7 @@ class DocumentService
 
     private function selected(Cliente $client, array $codes): array
     {
-        $accounts=Cliente::where('dni',$client->dni)->whereIn('codigo',$codes)->get()->keyBy('codigo');
+        $accounts=CarteraMensualQuery::vigentes()->where('documento',$client->documento)->whereIn('codigo',$codes)->get()->keyBy('codigo');
         if ($accounts->count()!==count($codes)) throw ValidationException::withMessages(['cuentas_seleccionadas'=>'Las cuentas deben pertenecer al cliente seleccionado.']);
         return array_map(fn($code)=>$accounts[$code]->toArray(),$codes);
     }
@@ -22,7 +22,7 @@ class DocumentService
     {
         $client=Cliente::findOrFail($data['cliente_id']);
         $accounts=$this->selected($client,$data['cuentas_seleccionadas']);
-        $data['nombre']=$client->titular; $data['dni']=$client->dni;
+        $data['nombre']=$client->nombre; $data['dni']=$client->documento;
         $data['deuda_total']=array_sum(array_column($accounts,'deuda_total'));
         $data['cuentas_seleccionadas']=json_encode($accounts,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR);
         $data['cuenta_banco']=config('platform.bank_accounts.'.$data['cuenta_banco'].'.value');

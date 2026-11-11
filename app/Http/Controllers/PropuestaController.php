@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PropuestaRequest;
 use App\Models\{Cliente, Propuesta, Sustento};
-use App\Services\DocumentService;
+use App\Services\{CarteraMensualQuery, DocumentService};
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,10 +14,10 @@ class PropuestaController extends Controller
     {
         $dni = trim((string) $request->query('dni'));
         if ($dni === '' && $request->filled('cliente_id')) {
-            $dni = (string) Cliente::findOrFail($request->integer('cliente_id'))->dni;
+            $dni = (string) Cliente::findOrFail($request->integer('cliente_id'))->documento;
         }
         abort_if($dni === '', 404);
-        $accounts = Cliente::query()->where('dni', $dni)->orderBy('codigo')->get(['id','cartera','dni','titular','codigo','entidad','cosecha','producto','sub_producto','historico','departamento','rango','deuda_total','deuda_capital','campana']);
+        $accounts = CarteraMensualQuery::vigentes()->where('documento', $dni)->orderBy('codigo')->get(['id','cartera','documento','nombre','codigo','entidad','cosecha','producto','sub_producto','departamento','deuda_total','deuda_capital','campana','FEC_PRO']);
         abort_if($accounts->isEmpty(), 404);
 
         return Inertia::render('Propuestas/Form', [
